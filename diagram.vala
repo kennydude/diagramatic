@@ -33,9 +33,20 @@ class Diagramatic : Object{
 		fixed.draw.connect( (c) => {
 			c.set_line_width(1);
 			foreach( Link l in s.links) {
+				// Draw line between them
 				Shape a = s.shapes.nth_data(l.linkA);
-				c.move_to(a.x, a.y);
 				Shape b = s.shapes.nth_data(l.linkB);
+				
+				if(l.linkAPoint == "c"){ // Left or Right is best?
+					if( a.x > b.x ){ // Come out of left
+						c.move_to(a.x, a.y + (a.height/2) );
+					} else{ // Come out of right
+						c.move_to(a.x + a.width, a.y + (a.height/2) );
+					}
+				}
+				
+				// c.move_to(a.x, a.y);
+				
 				c.line_to(b.x, b.y);
 				c.stroke();
 			}

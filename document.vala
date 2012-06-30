@@ -54,6 +54,8 @@ class Sheet : Object{
 class Link : Object{
 	public int linkA = 0;
 	public int linkB = 0;
+	public string linkAPoint = "c";
+	public string linkBPoint = "c";
 	
 	public void fromXML(Xml.Node node){
 		linkA = int.parse(node.get_prop("a"));

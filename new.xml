@@ -16,9 +16,18 @@
 			type="dfd/datastore" />
 		<Link
 			a="0"
-			b="1" />
+			b="1"
+			a-corner="c"
+			b-corner="c" />
 	</Sheet>
 	<Sheet name="Sheet 2">
+		<Shape
+			x="300"
+			y="100"
+			width="100"
+			height="100"
+			text="Data Store 4"
+			type="dfd/datastore" />
 	</Sheet>
 	<Sheet name="Sheet 3">
 	</Sheet>
