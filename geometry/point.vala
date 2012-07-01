@@ -18,7 +18,7 @@ namespace Geometry{
 		 * @return A new Point representing the Max()
 		 */
 		public static Point max(Point p1, Point p2) {
-			return new Rectangle(p1, p2).getBottomRight().translate(-1, -1);
+			return Rectangle.from_points(p1, p2).getBottomRight().translate_i(-1, -1);
 		}
 
 		/**
@@ -31,7 +31,7 @@ namespace Geometry{
 		 * @return A new Point representing the Min()
 		 */
 		public static Point min(Point p1, Point p2) {
-			return new Rectangle(p1, p2).getTopLeft();
+			return Rectangle.from_points(p1, p2).getTopLeft();
 		}
 
 		/**
@@ -121,7 +121,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Point getCopy() {
-			return new Point(this);
+			return Point.from_point(this);
 		}
 
 		/**
@@ -133,7 +133,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Dimension getDifference(Point p) {
-			return new Dimension(this.x - p.x, this.y - p.y);
+			return Dimension.from_integers(this.x - p.x, this.y - p.y);
 		}
 
 		/**
@@ -166,8 +166,8 @@ namespace Geometry{
 			long i = p.x - x;
 			long j = p.y - y;
 			long result = i * i + j * j;
-			if (result > Integer.MAX_VALUE)
-				return Integer.MAX_VALUE;
+			if (result > int.MAX)
+				return int.MAX;
 			return (int) result;
 		}
 
@@ -182,7 +182,7 @@ namespace Geometry{
 		 *             not be used any more.
 		 */
 		public int getDistanceOrthogonal(Point p) {
-			return Math.abs(y - p.y) + Math.abs(x - p.x);
+			return (y - p.y) + (x - p.x);
 		}
 
 		/**
@@ -202,11 +202,11 @@ namespace Geometry{
 		 *            The reference Point
 		 * @return NORTH, SOUTH, EAST, or WEST, as defined in
 		 *         {@link PositionConstants}
-		 */
+		 *
 		public int getPosition(Point p) {
 			int dx = p.x - x;
 			int dy = p.y - y;
-			if (Math.abs(dx) > Math.abs(dy)) {
+			if (dx > dy) {
 				if (dx < 0)
 					return PositionConstants.WEST;
 				return PositionConstants.EAST;
@@ -215,6 +215,7 @@ namespace Geometry{
 				return PositionConstants.NORTH;
 			return PositionConstants.SOUTH;
 		}
+		*/
 
 		/**
 		 * Creates a new Point from this Point by scaling by the specified amount.
@@ -329,12 +330,12 @@ namespace Geometry{
 
 		/** @see Translatable#performScale(double) */
 		public void performScale(double factor) {
-			scale(factor);
+			scale_f(factor);
 		}
 
 		/** @see Translatable#performTranslate(int, int) */
 		public void performTranslate(int dx, int dy) {
-			translate(dx, dy);
+			translate_i(dx, dy);
 		}
 
 		/**
@@ -366,7 +367,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Point scale_f(double factor) {
-			return scale(factor, factor);
+			return scale_d(factor, factor);
 		}
 
 		/**
@@ -442,14 +443,6 @@ namespace Geometry{
 		}
 
 		/**
-		 * @return String representation.
-		 * @since 2.0
-		 */
-		public string toString() {
-			return "Point(" + preciseX() + ", " + preciseY() + ")";//$NON-NLS-3$//$NON-NLS-2$//$NON-NLS-1$
-		}
-
-		/**
 		 * Shifts this Point by the values of the Dimension along each axis, and
 		 * returns this for convenience.
 		 * 
@@ -459,7 +452,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Point translate_di(Dimension d) {
-			return translate_i(d.width(), d.height());
+			return translate_i(d.width, d.height);
 		}
 
 		/**

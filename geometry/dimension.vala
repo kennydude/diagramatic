@@ -18,8 +18,10 @@ namespace Geometry{
 		 * @since 3.7
 		 */
 		public static Dimension max(Dimension d1, Dimension d2) {
-			return new Dimension(Math.max(d1.width(), d2.width()), Math.max(
-					d1.height(), d2.height()));
+			return Dimension.from_integers(
+						int.max(d1.width, d2.width),
+						int.max(d1.height, d2.height)
+					);
 		}
 
 		/**
@@ -33,8 +35,10 @@ namespace Geometry{
 		 * @since 3.7
 		 */
 		public static Dimension min(Dimension d1, Dimension d2) {
-			return new Dimension(Math.min(d1.width(), d2.width()), Math.min(
-					d1.height(), d2.height()));
+			return Dimension.from_integers(
+						int.min(d1.width, d2.width),
+						int.min(d1.height, d2.height)
+					);
 		}
 
 		/**
@@ -81,7 +85,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public bool contains(Dimension d) {
-			return width >= d.width() && height >= d.height();
+			return width >= d.width && height >= d.height;
 		}
 
 		/**
@@ -96,7 +100,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public bool containsProper(Dimension d) {
-			return width > d.width() && height > d.height();
+			return width > d.width && height > d.height;
 		}
 
 		/**
@@ -124,7 +128,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Dimension expand_by_dimension(Dimension d) {
-			return expand_by_int(d.width(), d.height());
+			return expand_by_int(d.width, d.height);
 		}
 
 		/**
@@ -167,7 +171,7 @@ namespace Geometry{
 		 * @deprecated Use {@link #expand(int, int)} instead.
 		 */
 		public Dimension expand_by_point(Point p) {
-			return expand(p.x(), p.y());
+			return expand_by_int(p.x, p.y);
 		}
 
 		/**
@@ -187,7 +191,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Dimension getCopy() {
-			return new Dimension(this);
+			return Dimension.from_integers(width, height);
 		}
 
 		/**
@@ -280,7 +284,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Dimension getScaled(double amount) {
-			return getCopy().scale(amount);
+			return getCopy().scale_factor(amount);
 		}
 
 		/**
@@ -308,7 +312,7 @@ namespace Geometry{
 		 * @since 3.8
 		 */
 		public Dimension getShrinked_by_double(double w, double h) {
-			return getCopy().shrink_by_dobule(w, h);
+			return getCopy().shrink_by_double(w, h);
 		}
 
 		/**
@@ -368,8 +372,8 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Dimension intersect(Dimension d) {
-			width = Math.min(d.width(), width);
-			height = Math.min(d.height(), height);
+			width = int.min(d.width, width);
+			height = int.min(d.height, height);
 			return this;
 		}
 
@@ -390,14 +394,14 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Dimension negate() {
-			return scale(-1);
+			return scale_factor(-1);
 		}
 
 		/**
 		 * @see org.eclipse.draw2d.geometry.Translatable#performScale(double)
 		 */
 		public void performScale(double factor) {
-			scale(factor);
+			scale_factor(factor);
 		}
 
 		
@@ -479,8 +483,8 @@ namespace Geometry{
 			// may be done not sooner than in 4.0; if this is done, it has
 			// to be ensured that the overwritten method in PrecisionDimension
 			// is adjusted as well.
-			width = d.width();
-			height = d.height();
+			width = d.width;
+			height = d.height;
 		}
 
 		/**
@@ -520,8 +524,8 @@ namespace Geometry{
 		 * @return <code>this</code> for convenience
 		 * @since 3.7
 		 */
-		public Dimension shrink_by_dimesion(Dimension d) {
-			return shrink_by_double(d.width(), d.height());
+		public Dimension shrink_by_dimension(Dimension d) {
+			return shrink_by_double(d.width, d.height);
 		}
 
 		/**
@@ -557,16 +561,6 @@ namespace Geometry{
 		}
 
 		/**
-		 * @see Object#toString()
-		 */
-
-		public string toString() {
-			return "Dimension(" + //$NON-NLS-1$
-					preciseWidth() + ", " + //$NON-NLS-1$
-					preciseHeight() + ")"; //$NON-NLS-1$
-		}
-
-		/**
 		 * Swaps the width and height of this Dimension, and returns this for
 		 * convenience. Can be useful in orientation changes.
 		 * 
@@ -590,8 +584,8 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Dimension union(Dimension d) {
-			width = Math.max(width, d.width());
-			height = Math.max(height, d.height());
+			width = int.max(width, d.width);
+			height = int.max(height, d.height);
 			return this;
 		}
 

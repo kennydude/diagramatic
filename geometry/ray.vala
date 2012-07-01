@@ -91,7 +91,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public int assimilarity(Ray r) {
-			return Math.abs(x * r.y - y * r.x);
+			return x * r.y - y * r.x;
 		}
 
 		/**
@@ -119,7 +119,7 @@ namespace Geometry{
 			return (long) x * r.x + (long) y * r.y;
 		}
 
-		public bool equals(Ray obj) {
+		public bool equals(Ray r) {
 			return x == r.x && y == r.y;
 		}
 
@@ -132,7 +132,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Ray getAdded(Ray r) {
-			return new Ray(r.x + x, r.y + y);
+			return Ray.from_ints(r.x + x, r.y + y);
 		}
 
 		/**
@@ -144,7 +144,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Ray getAveraged(Ray r) {
-			return new Ray((x + r.x) / 2, (y + r.y) / 2);
+			return Ray.from_ints((x + r.x) / 2, (y + r.y) / 2);
 		}
 
 		/**
@@ -157,7 +157,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public Ray getScaled(int s) {
-			return new Ray(x * s, y * s);
+			return Ray.from_ints(x * s, y * s);
 		}
 
 		/**
@@ -198,14 +198,7 @@ namespace Geometry{
 		 * @since 2.0
 		 */
 		public int similarity(Ray r) {
-			return Math.abs(dotProduct(r));
-		}
-
-		/**
-		 * @return a String representation
-		 */
-		public string toString() {
-			return "(" + x + "," + y + ")";//$NON-NLS-3$//$NON-NLS-2$//$NON-NLS-1$
+			return dotProduct(r);
 		}
 	}
 }

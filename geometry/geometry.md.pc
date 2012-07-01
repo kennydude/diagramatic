@@ -1,0 +1,4 @@
+Name: geometry
+Description: 
+Version: 0.1
+Libs: -L/home/kennydude/Dev/Diagramatic/geometry/bin/Debug -lgeometry

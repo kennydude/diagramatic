@@ -4,19 +4,34 @@ using Gee;
 
 namespace Geometry{
 	public class ManhattanLinker : Object{
-		Map rowsUsed = new HashMap();
-		Map colsUsed = new HashMap();
+		/* From Abstract class */
+		private static Point START = new Point();
+		private static Point END = new Point();
+		
+		protected Point getEndPoint(Connection connection) {
+			Point r = connection.SourceAnchor.ReferencePoint;
+			return END.setLocation_point(r);
+		}
+		
+		protected Point getStartPoint(Connection conn) {
+			Point r = conn.TargetAnchor.ReferencePoint;
+			return START.setLocation_point(r);
+		}
+		/* End From */
+		
+		Map<int, int> rowsUsed = new HashMap<int, int>();
+		Map<int, int> colsUsed = new HashMap<int, int>();
 
-		Map reservedInfo = new HashMap();
+		Map<Connection, ReservedInfo> reservedInfo = new HashMap<Connection, ReservedInfo>();
 		private class ReservedInfo {
-			public GLib.List reservedRows = new GLib.List();
-			public GLib.List reservedCols = new GLib.List();
+			public GLib.List<int> reservedRows = new GLib.List<int>();
+			public GLib.List<int> reservedCols = new GLib.List<int>();
 		}
 
-		private static Ray UP = new Ray(0, -1);
-		private static Ray DOWN = new Ray(0, 1);
-		private static Ray LEFT = new Ray(-1, 0);
-		private static Ray RIGHT = new Ray(1, 0);
+		private static Ray UP = Ray.from_ints(0, -1);
+		private static Ray DOWN = Ray.from_ints(0, 1);
+		private static Ray LEFT = Ray.from_ints(-1, 0);
+		private static Ray RIGHT = Ray.from_ints(1, 0);
 
 		/**
 		 * @see ConnectionRouter#invalidate(Connection)
@@ -26,7 +41,7 @@ namespace Geometry{
 		}
 
 		private int getColumnNear(Connection connection, int r, int n, int x) {
-			int min = Math.min(n, x), max = Math.max(n, x);
+			int min = int.min(n, x), max = int.max(n, x);
 			if (min > r) {
 				max = min;
 				min = r - (min - r);
@@ -42,12 +57,12 @@ namespace Geometry{
 			int i;
 			while (proximity < r) {
 				i = r + proximity * direction;
-				if (!colsUsed.containsKey(i)) {
-					colsUsed.put(i, i);
+				if (!colsUsed.has_key(i)) {
+					colsUsed.set(i, i);
 					reserveColumn(connection, i);
-					return i.intValue();
+					return i;
 				}
-				int j = i.intValue();
+				int j = i;
 				if (j <= min)
 					return j + 2;
 				if (j >= max)
@@ -74,24 +89,24 @@ namespace Geometry{
 		 * @return the direction from <i>r</i> to <i>p</i>
 		 */
 		protected Ray getDirection(Rectangle r, Point p) {
-			int i, distance = Math.abs(r.x - p.x);
+			int i, distance = (int)Math.fabs(r.x - p.x);
 			Ray direction;
 
 			direction = LEFT;
 
-			i = Math.abs(r.y - p.y);
+			i = (int)Math.fabs(r.y - p.y);
 			if (i <= distance) {
 				distance = i;
 				direction = UP;
 			}
 
-			i = Math.abs(r.bottom() - p.y);
+			i = (int)Math.fabs(r.bottom() - p.y);
 			if (i <= distance) {
 				distance = i;
 				direction = DOWN;
 			}
 
-			i = Math.abs(r.right() - p.x);
+			i = (int)Math.fabs(r.right() - p.x);
 			if (i < distance) {
 				distance = i;
 				direction = RIGHT;
@@ -104,7 +119,7 @@ namespace Geometry{
 			ConnectionAnchor anchor = conn.TargetAnchor;
 			Point p = getEndPoint(conn);
 			Rectangle rect;
-			if (anchor.getOwner() == null)
+			if (anchor.Bounds == null)
 				rect = new Rectangle(p.x - 1, p.y - 1, 2, 2);
 			else {
 				rect = conn.TargetAnchor.Bounds.getCopy();
@@ -114,7 +129,7 @@ namespace Geometry{
 		}
 
 		protected int getRowNear(Connection connection, int r, int n, int x) {
-			int min = Math.min(n, x), max = Math.max(n, x);
+			int min = int.min(n, x), max = int.max(n, x);
 			if (min > r) {
 				max = min;
 				min = r - (min - r);
@@ -131,12 +146,12 @@ namespace Geometry{
 			int i;
 			while (proximity < r) {
 				i = r + proximity * direction;
-				if (!rowsUsed.containsKey(i)) {
-					rowsUsed.put(i, i);
+				if (!rowsUsed.has_key(i)) {
+					rowsUsed.set(i, i);
 					reserveRow(connection, i);
-					return i.intValue();
+					return i;
 				}
-				int j = i.intValue();
+				int j = i;
 				if (j <= min)
 					return j + 2;
 				if (j >= max)
@@ -155,7 +170,7 @@ namespace Geometry{
 			ConnectionAnchor anchor = conn.SourceAnchor;
 			Point p = getStartPoint(conn);
 			Rectangle rect;
-			if (anchor.getOwner() == null)
+			if (anchor.Bounds == null)
 				rect = new Rectangle(p.x - 1, p.y - 1, 2, 2);
 			else {
 				rect = conn.SourceAnchor.Bounds.getCopy();
@@ -168,22 +183,22 @@ namespace Geometry{
 				bool horizontal, Connection conn) {
 			removeReservedLines(conn);
 
-			int pos[] = new int[positions.size() + 2];
+			int[] pos = {};
 			if (horizontal)
 				pos[0] = start.x;
 			else
 				pos[0] = start.y;
 			int i;
-			for (i = 0; i < positions.size(); i++) {
+			for (i = 0; i < positions.length(); i++) {
 				pos[i + 1] = positions.nth_data(i);
 			}
-			if (horizontal == (positions.size() % 2 == 1))
+			if (horizontal == (positions.length() % 2 == 1))
 				pos[++i] = end.x;
 			else
 				pos[++i] = end.y;
 
 			GLib.List<Point> points = new GLib.List<Point>();
-			points.append(new Point(start.x, start.y));
+			points.append(Point.from_integers(start.x, start.y));
 			Point p;
 			int current, prev, min, max;
 			bool adjust;
@@ -199,19 +214,19 @@ namespace Geometry{
 						max = pos[i + 2];
 						pos[i] = current = getRowNear(conn, current, min, max);
 					}
-					p = new Point(prev, current);
+					p = Point.from_integers(prev, current);
 				} else {
 					if (adjust) {
 						min = pos[i - 2];
 						max = pos[i + 2];
 						pos[i] = current = getColumnNear(conn, current, min, max);
 					}
-					p = new Point(current, prev);
+					p = Point.from_integers(current, prev);
 				}
 				points.append(p);
 			}
-			points.append(new Point(end.x, end.y));
-			conn.PointList = points;
+			points.append( Point.from_integers(end.x, end.y));
+			conn.PointList = points.copy();
 		}
 
 		/**
@@ -222,35 +237,35 @@ namespace Geometry{
 		}
 
 		protected void removeReservedLines(Connection connection) {
-			ReservedInfo rInfo = (ReservedInfo) reservedInfo.get(connection);
+			ReservedInfo rInfo = reservedInfo.get(connection);
 			if (rInfo == null)
 				return;
 
-			for (int i = 0; i < rInfo.reservedRows.size(); i++) {
-				rowsUsed.remove(rInfo.reservedRows.get(i));
+			for (int i = 0; i < rInfo.reservedRows.length(); i++) {
+				rowsUsed.unset(rInfo.reservedRows.nth_data(i));
 			}
-			for (int i = 0; i < rInfo.reservedCols.size(); i++) {
-				colsUsed.remove(rInfo.reservedCols.get(i));
+			for (int i = 0; i < rInfo.reservedCols.length(); i++) {
+				colsUsed.unset(rInfo.reservedCols.nth_data(i));
 			}
-			reservedInfo.remove(connection);
+			reservedInfo.unset(connection);
 		}
 
 		protected void reserveColumn(Connection connection, int column) {
-			ReservedInfo info = (ReservedInfo) reservedInfo.get(connection);
+			ReservedInfo info = reservedInfo.get(connection);
 			if (info == null) {
 				info = new ReservedInfo();
-				reservedInfo.put(connection, info);
+				reservedInfo.set(connection, info);
 			}
-			info.reservedCols.add(column);
+			info.reservedCols.append(column);
 		}
 
 		protected void reserveRow(Connection connection, int row) {
-			ReservedInfo info = (ReservedInfo) reservedInfo.get(connection);
+			ReservedInfo info = reservedInfo.get(connection);
 			if (info == null) {
 				info = new ReservedInfo();
-				reservedInfo.put(connection, info);
+				reservedInfo.set(connection, info);
 			}
-			info.reservedRows.add(row);
+			info.reservedRows.append(row);
 		}
 
 		/**
@@ -266,15 +281,15 @@ namespace Geometry{
 			Point endPoint = getEndPoint(conn);
 			conn.translateToRelative(endPoint);
 
-			Ray start = new Ray(startPoint);
-			Ray end = new Ray(endPoint);
+			Ray start = Ray.from_point(startPoint);
+			Ray end = Ray.from_point(endPoint);
 			Ray average = start.getAveraged(end);
 
-			Ray direction = new Ray(start, end);
+			Ray direction = Ray.from_rays(start, end);
 			Ray startNormal = getStartDirection(conn);
 			Ray endNormal = getEndDirection(conn);
 
-			GLib.List<int> positions = new GLib.List<int>(5);
+			GLib.List<int> positions = new GLib.List<int>();
 			bool horizontal = startNormal.isHorizontal();
 			if (horizontal)
 				positions.append(start.y);
