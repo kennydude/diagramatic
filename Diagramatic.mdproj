@@ -18,7 +18,6 @@
         <ProjectPackage file="/usr/share/vala-0.14/vapi/libxml-2.0.vapi" name="libxml-2.0" IsProject="false" />
         <ProjectPackage file="/usr/share/vala-0.14/vapi/gtk+-3.0.vapi" name="gtk+-3.0" IsProject="false" />
         <ProjectPackage file="/usr/share/vala-0.14/vapi/librsvg-2.0.vapi" name="librsvg-2.0" IsProject="false" />
-        <ProjectPackage file="../../geometry/bin/Debug/geometry.vapi" name="geometry" IsProject="true" />
       </Packages>
     </Packages>
   </PropertyGroup>
@@ -62,6 +61,7 @@
   <ItemGroup>
     <Compile Include="diagram.vala" />
     <Compile Include="document.vala" />
+    <Compile Include="router.vala" />
   </ItemGroup>
   <ItemGroup>
     <None Include="diagram.ui">

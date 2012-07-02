@@ -20,6 +20,15 @@ class Diagramatic : Object{
 			addSheet(s);
 		}
 	}
+	
+	void drawRoutedRoute(Cairo.Context c){
+		stdout.printf("Routed with size of " + Router.lastRoute.length.to_string() + " points!\n");
+		foreach(Point point in Router.lastRoute){
+			stdout.printf("X: " + point.X.to_string() +", Y: " + point.Y.to_string() + "\n" );
+			c.line_to(point.X, point.Y);
+			c.move_to(point.X, point.Y);
+		}
+	}
 
 	public void addSheet(Sheet s){
 		// Setup sheet
@@ -37,17 +46,70 @@ class Diagramatic : Object{
 				Shape a = s.shapes.nth_data(l.linkA);
 				Shape b = s.shapes.nth_data(l.linkB);
 				
+				Point ap = new Point();
+				Point bp = new Point();
+				
+				// TODO: Allow for the shape object to say where it wants to connect from
 				if(l.linkAPoint == "c"){ // Left or Right is best?
 					if( a.x > b.x ){ // Come out of left
 						c.move_to(a.x, a.y + (a.height/2) );
+						ap.X = a.x;
+						ap.Y = a.y + (a.height / 2);
+						ap.Direction = Direction.West;
+						
+						bp.X = b.x + b.width;
+						bp.Y = b.y + (b.height/2);
+						bp.Direction = Direction.East;
 					} else{ // Come out of right
 						c.move_to(a.x + a.width, a.y + (a.height/2) );
+						
+						ap.X = a.x + a.width;
+						ap.Y = a.y + (a.height / 2);
+						ap.Direction = Direction.East;
+						
+						bp.X = b.x;
+						bp.Y = b.y + (b.height/2);
+						bp.Direction = Direction.West;
+					}
+				}
+				
+				if(Router.Route( ap, bp ) == true){
+					drawRoutedRoute(c);
+				} else{
+					// Could not route, try going up
+					
+					if(l.linkAPoint == "c"){ // Strictly going up north
+						Point old_ap = ap.clone();
+						Point old_bp = bp.clone();
+						
+						if( a.y < b.y ){ // a is above b
+							ap.Direction = Direction.South;
+							bp.Direction = Direction.North;
+						} else{ // b is above a
+							ap.Direction = Direction.North;
+							bp.Direction = Direction.South;
+						}
+						
+						
+						if(a.x > b.x) { // also, a is to the left of b
+							ap.X -= 20;
+							bp.X -= 20;
+						} else{
+							ap.X += 20;
+							bp.X += 20;
+						}
+						
+						if(Router.Route(ap, bp) == true){
+							drawRoutedRoute(c);	
+						} else{
+							stdout.printf("Could not route ;__;\n");
+						}
 					}
 				}
 				
 				// c.move_to(a.x, a.y);
 				
-				c.line_to(b.x, b.y);
+				// c.line_to(b.x, b.y);
 				c.stroke();
 			}
 			return false;
