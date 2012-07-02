@@ -11,10 +11,36 @@ def lrepr(l, tab=1):
 	r += "\n" +((tab-1)*"\t")+ "]"
 	return r
 
+try:
+	if doctypes == None:
+		pass
+except NameError:
+	doctypes = {}
+
+def register_doctype(doctype, label):
+	global doctypes
+	doctypes[label] = doctype
+
 class DiagramDocument(object):
 	def __repr__(self):
-		return "DiagramDocument[\n\tSheets = %s\n]" % lrepr(self.sheets, 2)
-		
+		return self.__class__.__name__ + "[\n\tSheets = %s\n]" % lrepr(self.sheets, 2)
+	
+	def get_shapes(self):
+		raise Exception("DiagramDocument is an abstract class and requires get_shapes() is implemented")
+		return {}	
+	
+	@staticmethod
+	def fromXML(doc):
+		global doctypes
+		root = doc.Document
+		if(root == None): return None
+		if root['type'] in doctypes:
+			r = doctypes[root['type']]()
+			r.readXML(doc)
+			return r
+		else:
+			raise Exception("The doctype '%s' is not registered" % root['type'])
+	
 	def readXML(self, doc):
 		root = doc.Document
 		if(root == None):
@@ -64,7 +90,26 @@ class Link(object):
 	def fromXML(self, node):
 		self.linkA = int(node['a'])
 		self.linkB = int(node['b'])
+
+class ShapeDescriptor(object):
+	'''
+	A shape descriptor is used to describe insertable shapes
+	'''
+	title = "Element"
+	icon = "p.png"
+	image = "no.svg"
+
+	def __init__(self, title='', icon='', image=''):
+		self.tilte = title
+		self.icon = icon
+		self.image = image
 	
+	def build(self):
+		r = Shape()
+		r.text = "New Shape"
+		r.obj_url = self.image
+		return r
+
 class Shape(object):
 	def __repr__(self):
 		return "StdShape[ Type='%s', Text='%s' ]" % (self.obj_url, self.text)
@@ -114,13 +159,32 @@ class Shape(object):
 		
 		return False
 	
+	in_motion = False
+	def bp(self, t, me, d=None):
+		self.click_at = [ me.x, me.y ]
+		self.in_motion = True
+		self.view.grab_focus()
+
+	def bpr(self, t, me, d=None):
+		self.in_motion = False
+
+	def move(self, t, me, d= None):
+		if self.in_motion:
+			x = self.x + me.x - self.click_at[0]
+			y = self.y + me.y - self.click_at[1]
+			d.move(t, x, y)
+			self.x = x
+			self.y = y
 	
-	def getWidget(self, parent, num):
+	def getWidget(self, parent):
 		self.view = Gtk.DrawingArea()
 		self.view.set_size_request(self.width, self.height)
 		self.view.can_focus = True
 		self.view.modify_bg( Gtk.StateType.NORMAL, self.getWhite())
-		self.view.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, [Gtk.TargetEntry.new( "shape", Gtk.TargetFlags.SAME_APP, num )], Gdk.DragAction.COPY)
+		self.view.set_events(Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK | Gdk.EventMask.BUTTON_MOTION_MASK)
+		self.view.connect("button_press_event", self.bp)
+		self.view.connect("motion_notify_event", self.move, parent)
+		self.view.connect("button_release_event", self.bpr)
 		
 		try:
 			self.svg = rsvg.Handle("shapes/" + self.obj_url + ".svg")

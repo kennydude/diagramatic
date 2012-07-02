@@ -63,7 +63,6 @@ class Router(object):
 		newend = Point()
 		newend.X = end.X - start.X
 		newend.Y = end.Y - start.Y
-		print newend
 		if(startDirection== Direction.North):
 			return (endDirection, newend)
 		elif(startDirection== Direction.East):
@@ -129,7 +128,6 @@ class Router(object):
 	
 	
 	def LayoutOpposite(self, to ):
-		print to, self.MIN_DIST
 		if(to.Y < -self.MIN_DIST ):
 			ps = self.newArray(4)
 			if(abs(to.X) < 0.00000001):

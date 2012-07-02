@@ -1,10 +1,10 @@
 from gi.repository import Gtk
 from router import Router, Direction, Point
-import router
-router.debug_on = True
 from document import *
 from bs4 import BeautifulSoup
 import sys, traceback
+
+from doctypes import *
 
 # Main Class
 class Diagramatic(object):
@@ -14,11 +14,25 @@ class Diagramatic(object):
 			print("File Not Found\n")
 			return
 		
-		self.doc.readXML(doc)		
+		self.doc = DiagramDocument.fromXML(doc)		
 
 		for s in self.doc.sheets:
 			self.addSheet(s)
-		print self.doc
+		
+		# Now load shapes
+		tools = self.builder.get_object("toolpalette")
+		shapes = self.doc.get_shapes()
+		for cat in shapes:
+			print "SHC: %s" % cat
+			pallete = Gtk.ToolItemGroup()
+			pallete.set_label(cat)
+			for shape in shapes[cat]:
+				but = Gtk.ToolButton()
+				but.set_label(shape.title)
+				pallete.add(but)
+				print "SH: %s" % shape
+				
+			tools.add(pallete)
 	
 	def drawRoutedRoute(self, c):
 		print "Routed with size of %i points!" % len(self.router.lastRoute), self.router.lastRoute
@@ -39,7 +53,6 @@ class Diagramatic(object):
 			
 			# TODO: Allow for the shape object to say where it wants to connect from
 			if(l.linkAPoint == "c"): # Left or Right is best?
-				print a.x > b.x
 				if( a.x > b.x ): # Come out of left
 					ap.X = a.x
 					ap.Y = a.y + (a.height / 2)
@@ -56,43 +69,11 @@ class Diagramatic(object):
 					bp.X = b.x
 					bp.Y = b.y + (b.height/2)
 					bp.Direction = Direction.West
-				
-			print "Routing from ", ap, "to", bp
+			
 			self.router = Router()
 			if(self.router.Route( ap, bp ) == True):
 				self.drawRoutedRoute(c)
-			else:
-				print "Route #2"
-				# Could not route, try going up
-				
-				if(l.linkAPoint == "c"): # Strictly going up north
-					old_ap = ap.clone()
-					old_bp = bp.clone()
-					
-					if( a.y < b.y ): # a is above b
-						ap.Direction = Direction.South
-						bp.Direction = Direction.North
-					else: # b is above a
-						ap.Direction = Direction.North
-						bp.Direction = Direction.South
-					
-					
-					if(a.x > b.x) : # also, a is to the left of b
-						ap.X -= 20
-						bp.X -= 20
-					else:
-						ap.X += 20
-						bp.X += 20
-					
-					
-					if(self.router.Route(ap, bp) == True):
-						self.drawRoutedRoute(c)	
-					else:
-						print("Could not route __\n")
-				
-			# c.move_to(a.x, a.y)
 			
-			# c.line_to(b.x, b.y)
 			c.stroke()
 		
 		return True	
@@ -110,58 +91,11 @@ class Diagramatic(object):
 		viewport.modify_bg( Gtk.StateType.NORMAL, Shape.getWhite())
 		fixed.connect( "draw", 	self.draw_fixed, s )
 
-		fixed.drag_dest_set( Gtk.DestDefaults.ALL,[Gtk.TargetEntry.new( "shape", Gtk.TargetFlags.SAME_APP, 0 )], Gdk.DragAction.COPY )
-
 		# Add Shapes
-		i = 0
 		for shape in s.shapes:
-			view = shape.getWidget(fixed, i)
-			i += 1
-			print view
-			
-			'''
-			todo: fix
-			view.button_press_event.connect( (bp) => :
-				view.set_data("in_motion", true)
-				
-				int pointX = 0 int pointY = 0
-				fixed.get_pointer(out pointX, out pointY)
-				int origX = 0 int origY = 0
-				view.translate_coordinates(fixed, 0,0, out origX, out origY)
-				
-				view.set_data("startx", origX + origX)
-				view.set_data("starty", origY + origY)
-				view.set_data("startsx", pointX)
-				view.set_data("startsy", pointY)
-				view.is_focus = true
-				view.has_focus = true
-				return false
-			)
-			view.button_release_event.connect( (bp) => :
-				view.set_data("in_motion", false)
-				return false
-			)
-			view.motion_notify_event.connect( (me) => :
-				# TODO: Make this less glitchy somehow
-				if(view.get_data<bool>("in_motion") == true):
-					int x = view.get_data<int>("startx") + (int)me.x - view.get_data<int>("startsx")
-					int y = view.get_data<int>("starty") + (int)me.y - view.get_data<int>("startsy")
-					((Fixed)view.parent).move(view, x,y )
-					Shape sh = s.shapes.nth_data(view.get_data<int>("pos"))
-					sh.x = x sh.y = y
-				
-				return false
-			)
-			view.set_data("pos", s.shapes.index(shape))
-			view.focus_in_event.connect( (c) => :
-				view.queue_draw()
-				return false
-			)
-			'''
-			print int(shape.x), int(shape.y)
+			view = shape.getWidget(fixed)
 			fixed.put(view, int(shape.x), int(shape.y))
 		
-
 		# Add to sheets
 		xDoc.show_all()
 		fixed.show()

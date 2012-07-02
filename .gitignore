@@ -2,3 +2,4 @@
 bin
 *.pidb
 *.userprefs
+*.pyc
