@@ -57,6 +57,34 @@
             <property name="homogeneous">True</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkSeparatorToolItem" id="toolbutton1">
+            <property name="use_action_appearance">False</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="use_action_appearance">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="homogeneous">True</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkToggleToolButton" id="lock">
+            <property name="use_action_appearance">False</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="tooltip_text" translatable="yes">Lock</property>
+            <property name="use_action_appearance">False</property>
+            <property name="label" translatable="yes">Lock</property>
+            <property name="use_underline">True</property>
+            <property name="stock_id">gtk-dnd</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="homogeneous">True</property>
+          </packing>
+        </child>
       </object>
       <packing>
         <property name="expand">False</property>
@@ -73,16 +101,14 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <child>
-              <object class="GtkToolPalette" id="toolpalette">
+              <object class="GtkIconView" id="ivTools">
                 <property name="width_request">50</property>
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
-                <property name="toolbar_style">both-horiz</property>
+                <property name="can_focus">True</property>
               </object>
               <packing>
-                <property name="resize">True</property>
-                <property name="shrink">False</property>
+                <property name="resize">False</property>
+                <property name="shrink">True</property>
               </packing>
             </child>
             <child>
@@ -105,15 +131,20 @@
         <child>
           <object class="GtkBox" id="boxProperties">
             <property name="width_request">50</property>
-            <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkLabel" id="lblType">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="margin_left">5</property>
+                <property name="margin_right">5</property>
+                <property name="margin_top">5</property>
                 <property name="xalign">0.47999998927116394</property>
                 <property name="label" translatable="yes">Select an element</property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                </attributes>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -123,7 +154,7 @@
             </child>
           </object>
           <packing>
-            <property name="resize">True</property>
+            <property name="resize">False</property>
             <property name="shrink">True</property>
           </packing>
         </child>
@@ -135,15 +166,15 @@
       </packing>
     </child>
   </object>
-  <object class="GtkImage" id="imgNew2">
+  <object class="GtkImage" id="imageGoBack">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="halign">start</property>
+    <property name="valign">start</property>
     <property name="margin_left">5</property>
     <property name="margin_right">5</property>
     <property name="margin_top">5</property>
     <property name="margin_bottom">5</property>
-    <property name="stock">gtk-file</property>
+    <property name="stock">gtk-go-back</property>
   </object>
   <object class="GtkBox" id="boxNewDocument">
     <property name="visible">True</property>
@@ -355,16 +386,6 @@
       </packing>
     </child>
   </object>
-  <object class="GtkImage" id="imageGoBack">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="valign">start</property>
-    <property name="margin_left">5</property>
-    <property name="margin_right">5</property>
-    <property name="margin_top">5</property>
-    <property name="margin_bottom">5</property>
-    <property name="stock">gtk-go-back</property>
-  </object>
   <object class="GtkImage" id="imgNew">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -373,6 +394,16 @@
     <property name="margin_top">5</property>
     <property name="margin_bottom">5</property>
     <property name="ypad">1</property>
+    <property name="stock">gtk-file</property>
+  </object>
+  <object class="GtkImage" id="imgNew2">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="halign">start</property>
+    <property name="margin_left">5</property>
+    <property name="margin_right">5</property>
+    <property name="margin_top">5</property>
+    <property name="margin_bottom">5</property>
     <property name="stock">gtk-file</property>
   </object>
   <object class="GtkScrolledWindow" id="sheet">
@@ -406,6 +437,35 @@
             </child>
           </object>
         </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkMenu" id="sheetMenu">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkMenuItem" id="mnuRenameSheet">
+        <property name="use_action_appearance">False</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Rename</property>
+        <property name="use_underline">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkSeparatorMenuItem" id="mnuSep1">
+        <property name="use_action_appearance">False</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="mnuRemove">
+        <property name="use_action_appearance">False</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Remove</property>
+        <property name="use_underline">True</property>
       </object>
     </child>
   </object>

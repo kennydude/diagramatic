@@ -1,6 +1,5 @@
 # Document class
-from gi.repository import Gtk, PangoCairo, Gdk, Pango
-import cairo
+from gi.repository import Gtk, PangoCairo, Gdk, Pango, cairo
 import rsvg
 from bs4.element import Tag
 
@@ -20,6 +19,17 @@ except NameError:
 def register_doctype(doctype, label):
 	global doctypes
 	doctypes[label] = doctype
+
+
+try:
+	if shapes == None:
+		pass
+except NameError:
+	shapes = {}
+
+def register_shape(name, descriptor):
+	global shapes
+	shapes[name] = descriptor
 
 class DiagramDocument(object):
 	title = "Unknown Document"
@@ -108,17 +118,22 @@ class ShapeDescriptor(object):
 	'''
 	title = "Element"
 	icon = "p.png"
-	image = "no.svg"
+	image = "no"
+	cl = None
 
-	def __init__(self, title='', icon='', image=''):
-		self.tilte = title
+	def __init__(self, title='', icon='', image='', cl = None):
+		self.title = title
 		self.icon = icon
 		self.image = image
+		self.cl = cl
 	
 	def build(self):
-		r = Shape()
+		r = self.cl()
+		r.name = self.title
 		r.text = "New Shape"
 		r.obj_url = self.image
+		r.width = 100
+		r.height = 100
 		return r
 
 class Shape(object):
@@ -126,6 +141,14 @@ class Shape(object):
 		return "StdShape[ Type='%s', Text='%s' ]" % (self.obj_url, self.text)
 	font = "Ubuntu 12"
 	name = "DFD"
+	text = "New"
+	obj_url = "none"
+
+	properties = {
+		"width" : int,
+		"height" : int,
+		"text" : str
+	}
 	
 	@staticmethod
 	def getWhite():
@@ -133,10 +156,12 @@ class Shape(object):
 	
 	@staticmethod
 	def fromXML(node):
-		r = Shape()
+		global shapes
+		r = shapes[node['type']]().build()
 		r.obj_url = node["type"]
 		# TODO: Some kind of check to see what type to use
 		
+		r.name = shapes[node['type']].title
 		r.x = int(node['x'])
 		r.y = int(node['y']) 
 		r.width = int(node['width'])
@@ -144,31 +169,43 @@ class Shape(object):
 		r.text = node['text']
 		
 		return r
+	def updated_values(self):
+		self.view.set_size_request(self.width, self.height)
+		self.view.queue_draw()
+	def drawBackground(self, c):
+		self.svg.render_cairo(c)
 	
 	def draw(self,sender, c, data=None):
 		c.set_source_rgb(0,0,0)
-		self.svg.render_cairo(c)
+		self.drawBackground(c)
 				
 		pc = PangoCairo.create_context(c)
 		#c.set_antialias( cairo.Antialias.SUBPIXEL )
 		l = Pango.Layout(pc)
 		l.set_font_description( Pango.FontDescription(self.font))
 		l.set_text( self.text, -1)
+		
 		l.set_alignment( Pango.Alignment.CENTER )
+		l.set_wrap( Pango.WrapMode.WORD )
+		l.set_width( (self.width-5) * Pango.SCALE )
+		l.set_height( (self.height-5) * Pango.SCALE )
+		l.set_ellipsize( Pango.EllipsizeMode.END )
 		
 		w = 0
 		h = 0
 		w,h = l.get_pixel_size()
-		c.move_to( self.width/2 - w/2, self.height/2 - h/2)			
+		c.move_to( 0, (self.height/2) - (h/2) )
 		
 		c.set_source_rgb(0, 0, 0)
 		PangoCairo.update_layout(c, l)
 		PangoCairo.show_layout(c, l)
-
-		if(self.view.has_focus):
+		
+		import storage
+		if(storage.window.focusedItem == self):
 			c.set_source_rgb(0,0,200)
 			c.move_to(0,0)
 			c.rectangle(0,0,self.width-1,self.height-1)
+			c.stroke()
 		
 		return False
 	
@@ -179,11 +216,13 @@ class Shape(object):
 		self.in_motion = True
 		self.motion_occured = False
 		self.view.grab_focus()
+		return True
 
 	def bpr(self, t, me, d=None):
 		self.in_motion = False
 		if self.motion_occured == False:
-			self.window.focus_on(self)
+			import storage
+			storage.window.focus_on(self)
 
 	def move(self, t, me, d= None):
 		if self.in_motion:
@@ -197,7 +236,7 @@ class Shape(object):
 	def getWidget(self, parent):
 		self.view = Gtk.DrawingArea()
 		self.view.set_size_request(self.width, self.height)
-		self.view.can_focus = True
+		self.view.set_can_focus( True )
 		self.view.modify_bg( Gtk.StateType.NORMAL, self.getWhite())
 		self.view.set_events(Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK | Gdk.EventMask.BUTTON_MOTION_MASK)
 		self.view.connect("button_press_event", self.bp)
@@ -206,9 +245,9 @@ class Shape(object):
 		
 		try:
 			self.svg = rsvg.Handle("shapes/" + self.obj_url + ".svg")
-			self.view.connect( "draw", self.draw )
 		except Exception as e:
-			print "Error opening file!", e
+			print "Error opening file!", self.obj_url, e
+		self.view.connect( "draw", self.draw )
 		
 		return self.view
 	

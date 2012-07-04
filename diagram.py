@@ -2,13 +2,15 @@ from gi.repository import Gtk, Gdk, GdkPixbuf
 from router import Router, Direction, Point
 from document import *
 from bs4 import BeautifulSoup
-import sys, traceback
+import sys, traceback, string
 
 from doctypes import *
 
 # Main Class
 class Diagramatic(object):
+	currentView = ''
 	def set_child(self, child):
+		self.currentView = child
 		splash = self.builder.get_object(child)
 		for child in self.window.get_children():
 			self.window.remove(child)
@@ -40,23 +42,24 @@ class Diagramatic(object):
 		
 		# Now load shapes
 		self.loadShapes()
+		self.xSheets.set_current_page(0)
 
+	def shapeDragData(self, widget, drag_context, data, info, time):
+		print "Start Drag"
+		tree = self.toolsView.get_selected_items()
+		if len(tree) > 0:
+			item = self.shapeStore[ tree[0] ][1]
+			data.set_text(item, -1)
 		
 	def loadShapes(self):
-		tools = self.builder.get_object("toolpalette")
-		shapes = self.doc.get_shapes()
-		for cat in shapes:
-			print "SHC: %s" % cat
-			pallete = Gtk.ToolItemGroup()
-			pallete.set_label(cat)
-			for shape in shapes[cat]:
-				but = Gtk.ToolButton()
-				but.set_label(shape.title)
-				but.set_stock_id( Gtk.STOCK_GO_UP )
-				pallete.insert(but,-1)
-				print "SH: %s" % shape
+		myshapes = self.doc.get_shapes()
+		for shapename in myshapes:
+			shape = shapes[shapename]
+
+			self.shapeStore.append( [ shape.title, shapename, GdkPixbuf.Pixbuf.new_from_file("shapes/%s-i.png" % shape.image) ] )
+			print "SH: %s" % shape
 				
-			tools.add(pallete)
+			
 	
 	def drawRoutedRoute(self, c):
 		print "Routed with size of %i points!" % len(self.router.lastRoute), self.router.lastRoute
@@ -101,14 +104,84 @@ class Diagramatic(object):
 			c.stroke()
 		
 		return True	
+
+	def updateShapeValue( self, sender, option, item, t ):
+		if t == int:
+			value = int(sender.get_value() )
+		elif t == str:
+			value = sender.get_text()
+		
+		setattr( item, option, value )
+		item.updated_values()
+		print "updateShapeValue on", item, "'s", option, "with", value
 	
+	def bufferInsertText(self, sender, position,chars, n_chars, option, item, t ):
+		self.updateShapeValue(sender, option, item, t)
+	
+	focusedItem = None
+	def clear_properties(self, label=None):
+		prop = self.builder.get_object("boxProperties")
+		for child in prop.get_children():
+			if(child != label):
+				prop.remove(child)
 	def focus_on(self, item):
 		'''
 		Shape has been focused
 		'''
+		self.focusedItem = item
+		self.window.queue_draw()
+		
 		label = self.builder.get_object("lblType")
 		label.set_label(item.name)
+
+		self.clear_properties(label)
+		prop = self.builder.get_object("boxProperties")
+		prop.show()		
+		
+		for option in item.properties:
+			label = Gtk.Label(string.capwords(option))
+			prop.pack_start(label, False, False,0)
+			
+			t = item.properties[option]
+			print option, t
+			if t == int:
+				w = Gtk.SpinButton()
+				w.set_range(0,999)
+				w.set_value( getattr( item, option ) )
+				w.set_numeric( True )
+				w.set_increments( 1, 10 )
+			elif t == str:
+				w = Gtk.Entry()
+				w.set_text( getattr( item, option ) )
+				w.get_buffer().connect("inserted-text", self.bufferInsertText, option, item, t)
+			w.connect("changed", self.updateShapeValue, option, item, t)
+			prop.pack_start(w, False, False,0)
+		prop.show_all()
 	
+	def addShapeToDoc(self, widget, drag_context, x, y, drag_data, info, time, data=None):
+		text = drag_data.get_text()
+		global shapes
+		s = shapes[text]
+		shape = s.build()
+		shape.x = x
+		shape.y = y
+
+		shape.window = self
+		view = shape.getWidget(data.fixed)
+		data.fixed.put(view, int(shape.x), int(shape.y))
+		
+		data.shapes.append(shape)
+		view.show()
+		
+		print "Dropped ", text
+
+	def unfocus(self, sender=None, me=None):
+		self.focusedItem = None
+		sender.queue_draw()
+		
+		prop = self.builder.get_object("boxProperties")
+		prop.hide()
+
 	def addSheet(self, s):
 		# Setup sheet
 		
@@ -122,6 +195,14 @@ class Diagramatic(object):
 		viewport.modify_bg( Gtk.StateType.NORMAL, Shape.getWhite())
 		fixed.connect( "draw", 	self.draw_fixed, s )
 
+		viewport.set_events( Gdk.EventMask.BUTTON_PRESS_MASK )
+		viewport.connect("button-press-event", self.unfocus)
+
+		fixed.drag_dest_set(Gtk.DestDefaults.ALL, [], Gdk.DragAction.COPY )
+		fixed.drag_dest_add_text_targets()
+		fixed.connect( "drag-data-received", self.addShapeToDoc, s )
+		s.fixed = fixed
+
 		# Add Shapes
 		for shape in s.shapes:
 			shape.window = self
@@ -132,10 +213,18 @@ class Diagramatic(object):
 		xDoc.show_all()
 		fixed.show()
 		label = Gtk.Label(s.name)
-		# TODO: Context menu to change name etc.
-		self.xSheets.insert_page( xDoc, label, -1 )
+
+		label.set_events( Gdk.EventMask.BUTTON_PRESS_MASK )
+		label.connect("button-press-event", self.labelPressed, s)		
 		
 		print("S: " + s.name )
+		return self.xSheets.insert_page( xDoc, label, self.xSheets.get_n_pages() -1 )
+
+	def labelPressed(self, sender, event, sheet):
+		#if(event.button != 3): pass
+		mnu = self.builder.get_object("sheetMenu")
+		
+		mnu.popup(None, None, None, None, event.button, event.time)
 	
 	def templateSelectedChanged(self, selection):
 		tree = selection.get_selected_items()
@@ -156,8 +245,14 @@ class Diagramatic(object):
 			
 			self.set_child("boxDocument")
 			self.loadDocUi()
+	
+	def changeSheet(self, tabs, view, i):
+		if i+1 == tabs.get_n_pages() and self.currentView == "boxDocument":
+			s = Sheet()
+			self.doc.sheets.append( s )
+			self.xSheets.set_current_page( self.addSheet( s ) )
 
-	def __init__(self, args):
+	def run(self, args):
 		Gtk.init (args)
 
 		try:
@@ -183,10 +278,29 @@ class Diagramatic(object):
 				self.templateStore.append([ doctypes[doc].title, doc, GdkPixbuf.Pixbuf.new_from_file(doctypes[doc].image)
  ])
 			
+			# Document UI Setup
 			self.xSheets = self.builder.get_object("sheets")
+			self.xSheets.connect("switch-page", self.changeSheet)
+			l = Gtk.Image()
+			l.set_from_stock("gtk-add", Gtk.IconSize.MENU)
+			c = Gtk.Label("Nothing to see here")
+			l.show()
+			c.show()
+			self.xSheets.insert_page(c, l, -1)
+
+			self.toolsView = self.builder.get_object("ivTools")
+			self.shapeStore = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf)
+			self.toolsView.set_model(self.shapeStore)
+			self.toolsView.set_text_column(0)
+			self.toolsView.set_pixbuf_column(2)
+			self.toolsView.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK, [], Gdk.DragAction.COPY)
+			self.toolsView.drag_source_add_text_targets()
+			self.toolsView.connect("drag-data-get", self.shapeDragData )
 			
 			self.window = self.builder.get_object ("window")
 			self.window.show_all ()
+			prop = self.builder.get_object("boxProperties")
+			prop.hide()
 
 			self.window.connect("destroy",Gtk.main_quit)
 			self.loadSplash()
@@ -201,7 +315,8 @@ if __name__ == "__main__":
 	print("--------")
 	print("Created by @kennydude aka Joe Simpson\n")   
 	
-	import sys
+	import sys, storage
 	args = sys.argv
-	d = Diagramatic(args)
+	storage.window = Diagramatic()
+	storage.window.run(args)
 
