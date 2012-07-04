@@ -22,6 +22,13 @@ def register_doctype(doctype, label):
 	doctypes[label] = doctype
 
 class DiagramDocument(object):
+	title = "Unknown Document"
+	image = ""
+	def __init__(self):
+		self.sheets = [
+			Sheet()
+		]
+	
 	def __repr__(self):
 		return self.__class__.__name__ + "[\n\tSheets = %s\n]" % lrepr(self.sheets, 2)
 	
@@ -59,6 +66,10 @@ class DiagramDocument(object):
 				self.sheets.append(sheet)
 
 class Sheet(object):
+	name = "New Sheet"
+	shapes = []
+	links = []
+	
 	def __repr__(self):
 		return "Sheet[ Name='%s'\n\t\t\tShapes = %s,\n\t\t\tLinks = %s\n\t\t]" % ( self.name, lrepr(self.shapes, 4), lrepr(self.links, 4) )
 	def readXML(self, node):
@@ -114,6 +125,7 @@ class Shape(object):
 	def __repr__(self):
 		return "StdShape[ Type='%s', Text='%s' ]" % (self.obj_url, self.text)
 	font = "Ubuntu 12"
+	name = "DFD"
 	
 	@staticmethod
 	def getWhite():
@@ -130,6 +142,7 @@ class Shape(object):
 		r.width = int(node['width'])
 		r.height = int(node['height'])
 		r.text = node['text']
+		
 		return r
 	
 	def draw(self,sender, c, data=None):
@@ -159,17 +172,22 @@ class Shape(object):
 		
 		return False
 	
+	motion_occured = False
 	in_motion = False
 	def bp(self, t, me, d=None):
 		self.click_at = [ me.x, me.y ]
 		self.in_motion = True
+		self.motion_occured = False
 		self.view.grab_focus()
 
 	def bpr(self, t, me, d=None):
 		self.in_motion = False
+		if self.motion_occured == False:
+			self.window.focus_on(self)
 
 	def move(self, t, me, d= None):
 		if self.in_motion:
+			self.motion_occured = True
 			x = self.x + me.x - self.click_at[0]
 			y = self.y + me.y - self.click_at[1]
 			d.move(t, x, y)

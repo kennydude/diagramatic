@@ -1,4 +1,4 @@
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk, GdkPixbuf
 from router import Router, Direction, Point
 from document import *
 from bs4 import BeautifulSoup
@@ -8,6 +8,22 @@ from doctypes import *
 
 # Main Class
 class Diagramatic(object):
+	def set_child(self, child):
+		splash = self.builder.get_object(child)
+		for child in self.window.get_children():
+			self.window.remove(child)
+		self.window.add(splash)	
+		return splash
+	
+	def loadNewView(self, sender=None, data=None):
+		self.set_child("boxNewDocument")
+	
+	def loadSplash(self, sender=None, data=None):
+		self.set_child("boxSplash")
+		
+	def loadDocumentView(self):	
+		self.loadFile("new.xml")	
+	
 	def loadFile(self, filename):
 		doc = BeautifulSoup( open( filename, "r"), ["lxml", "xml"] )
 		if(doc == None):
@@ -15,11 +31,18 @@ class Diagramatic(object):
 			return
 		
 		self.doc = DiagramDocument.fromXML(doc)		
-
+		self.loadDocUi()
+	
+		
+	def loadDocUi(self):
 		for s in self.doc.sheets:
 			self.addSheet(s)
 		
 		# Now load shapes
+		self.loadShapes()
+
+		
+	def loadShapes(self):
 		tools = self.builder.get_object("toolpalette")
 		shapes = self.doc.get_shapes()
 		for cat in shapes:
@@ -29,7 +52,8 @@ class Diagramatic(object):
 			for shape in shapes[cat]:
 				but = Gtk.ToolButton()
 				but.set_label(shape.title)
-				pallete.add(but)
+				but.set_stock_id( Gtk.STOCK_GO_UP )
+				pallete.insert(but,-1)
 				print "SH: %s" % shape
 				
 			tools.add(pallete)
@@ -78,6 +102,13 @@ class Diagramatic(object):
 		
 		return True	
 	
+	def focus_on(self, item):
+		'''
+		Shape has been focused
+		'''
+		label = self.builder.get_object("lblType")
+		label.set_label(item.name)
+	
 	def addSheet(self, s):
 		# Setup sheet
 		
@@ -93,6 +124,7 @@ class Diagramatic(object):
 
 		# Add Shapes
 		for shape in s.shapes:
+			shape.window = self
 			view = shape.getWidget(fixed)
 			fixed.put(view, int(shape.x), int(shape.y))
 		
@@ -105,6 +137,25 @@ class Diagramatic(object):
 		
 		print("S: " + s.name )
 	
+	def templateSelectedChanged(self, selection):
+		tree = selection.get_selected_items()
+		btn = self.builder.get_object("btnCreateDocument")
+		if len(tree) > 0:		
+			btn.set_label("Create Document")
+			print "You selected", self.templateStore[ tree[0] ][0]
+		else:
+			btn.set_label("Select a template first")
+		btn.set_sensitive( len(tree) > 0 )
+	def newDocument(self, sender=None):
+		global doctypes
+		tree = self.templateIconView.get_selected_items()
+		if len(tree) > 0:
+			item = self.templateStore[ tree[0] ][1]
+			item = doctypes[item]
+			self.doc = item()
+			
+			self.set_child("boxDocument")
+			self.loadDocUi()
 
 	def __init__(self, args):
 		Gtk.init (args)
@@ -112,15 +163,33 @@ class Diagramatic(object):
 		try:
 			self.builder = Gtk.Builder ()
 			self.builder.add_from_file ("diagram.ui")
-			self.builder.connect_signals (None)
+			
+			btn = self.builder.get_object("btnGoBack")
+			btn.connect("clicked", self.loadSplash)
+			btn = self.builder.get_object("btnNew")
+			btn.connect("clicked", self.loadNewView)
+			btn = self.builder.get_object("btnCreateDocument")
+			btn.connect("clicked", self.newDocument)
+			
+			# Load Templates
+			self.templateStore = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf)
+			self.templateIconView = self.builder.get_object("iconviewTemplates")
+			self.templateIconView.set_model(self.templateStore)
+			self.templateIconView.set_text_column(0)
+			self.templateIconView.set_pixbuf_column(2)
+			self.templateIconView.connect("selection-changed", self.templateSelectedChanged)
+			global doctypes
+			for doc in doctypes:
+				self.templateStore.append([ doctypes[doc].title, doc, GdkPixbuf.Pixbuf.new_from_file(doctypes[doc].image)
+ ])
+			
+			self.xSheets = self.builder.get_object("sheets")
+			
 			self.window = self.builder.get_object ("window")
 			self.window.show_all ()
 
 			self.window.connect("destroy",Gtk.main_quit)
-			self.xSheets = self.builder.get_object("sheets")
-
-			self.doc = DiagramDocument()
-			self.loadFile("new.xml")
+			self.loadSplash()
 
 			Gtk.main ()
 		except Exception as e:
